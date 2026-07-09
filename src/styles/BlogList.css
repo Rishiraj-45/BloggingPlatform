@@ -1,0 +1,27 @@
+.blog-list {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.blog-list h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 24px;
+}
+
+.no-posts {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.no-posts p {
+  font-size: 16px;
+}
+
+.posts-grid {
+  display: grid;
+  gap: 20px;
+}

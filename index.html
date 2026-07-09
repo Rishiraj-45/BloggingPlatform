@@ -1,40 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Blog Platform</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<h1>Blog Platform</h1>
-
-<div class="box">
-    <h2>Register</h2>
-    <input type="email" id="regEmail" placeholder="Email">
-    <input type="password" id="regPassword" placeholder="Password">
-    <button onclick="registerUser()">Register</button>
-</div>
-
-<div class="box">
-    <h2>Login</h2>
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Password">
-    <button onclick="loginUser()">Login</button>
-</div>
-
-<div class="box">
-    <h2>Create Blog Post</h2>
-    <input type="text" id="blogTitle" placeholder="Blog Title">
-    <textarea id="blogContent" placeholder="Write your blog"></textarea>
-    <button onclick="createPost()">Publish</button>
-</div>
-
-<div class="box">
-    <h2>Blog Posts</h2>
-    <div id="posts"></div>
-</div>
-
-<script src="script.js"></script>
-
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Powered Blog Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
