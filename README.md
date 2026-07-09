@@ -3,7 +3,10 @@
 ## 🚀 Project Overview
 
 A **modern, AI-integrated full-stack blogging platform** enabling users to create, manage, and interact with blog posts through an intuitive React-based interface. Powered by HuggingFace AI models for intelligent content assistance including auto-summarization, title generation, auto-tagging, and sentiment analysis.
-
+---
+## Demo Login
+** User ID: demo@example.com **
+** Password: demo123 **
 ---
 
 ## ✨ **NEW: AI-Powered Features** 🤖

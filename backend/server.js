@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const { HfInference } = require('@huggingface/inference');
 
 const app = express();
@@ -12,36 +11,31 @@ app.use(express.json());
 // Initialize HuggingFace Inference Client
 const hf = new HfInference(process.env.HF_TOKEN);
 
-mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log("MongoDB Connected ✅"))
-.catch(err => console.log(err));
+// ============ IN-MEMORY MOCK DATABASE ============
+// Demo mode: Replace with MongoDB for production
+const mockDB = {
+    users: [
+        { email: 'demo@example.com', password: 'demo123', createdAt: new Date() },
+        { email: 'test@example.com', password: 'test123', createdAt: new Date() }
+    ],
+    posts: [
+        {
+            _id: '1',
+            email: 'demo@example.com',
+            title: 'Welcome to AI Blog Platform',
+            content: 'This is a demo post. Try the AI features to generate summaries, titles, and analyze sentiment!',
+            summary: 'Demo post showcasing AI features',
+            tags: ['AI', 'Demo', 'Blog'],
+            sentiment: 'POSITIVE',
+            createdAt: new Date()
+        }
+    ],
+    comments: []
+};
 
-const userSchema = new mongoose.Schema({
-    email: String,
-    password: String,
-    createdAt: { type: Date, default: Date.now }
-});
-
-const postSchema = new mongoose.Schema({
-    email: String,
-    title: String,
-    content: String,
-    summary: String,
-    tags: [String],
-    sentiment: String,
-    createdAt: { type: Date, default: Date.now }
-});
-
-const commentSchema = new mongoose.Schema({
-    postId: String,
-    email: String,
-    comment: String,
-    createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model("User", userSchema);
-const Post = mongoose.model("Post", postSchema);
-const Comment = mongoose.model("Comment", commentSchema);
+// Simple ID generator
+let idCounter = 100;
+const generateId = () => `${++idCounter}`;
 
 // ============ AUTH ENDPOINTS ============
 
@@ -54,8 +48,12 @@ app.post('/register', async (req,res)=>{
             return res.json({ success: false, message: "Email and password required" });
         }
 
-        const user = new User({ email, password });
-        await user.save();
+        // Check if user exists
+        if(mockDB.users.find(u => u.email === email)) {
+            return res.json({ success: false, message: "Email already registered" });
+        }
+
+        mockDB.users.push({ email, password, createdAt: new Date() });
         res.json({ success: true, message:"User Registered Successfully" });
     } catch(err) {
         res.json({ success: false, message: err.message });
@@ -66,7 +64,7 @@ app.post('/register', async (req,res)=>{
 app.post('/login', async (req,res)=>{
     try {
         const {email,password}=req.body;
-        const user = await User.findOne({email, password});
+        const user = mockDB.users.find(u => u.email === email && u.password === password);
 
         if(user){
             res.json({
@@ -87,18 +85,20 @@ app.post('/login', async (req,res)=>{
 
 // ============ BLOG POST ENDPOINTS ============
 
-// Create Post (without AI)
+// Create Post
 app.post('/createPost', async (req,res)=>{
     try {
         const {email,title,content}=req.body;
 
-        const post = new Post({
+        const post = {
+            _id: generateId(),
             email,
             title,
-            content
-        });
+            content,
+            createdAt: new Date()
+        };
 
-        await post.save();
+        mockDB.posts.push(post);
         res.json({ success: true, message:"Post Created Successfully", postId: post._id });
     } catch(err) {
         res.json({ success: false, message: err.message });
@@ -108,7 +108,7 @@ app.post('/createPost', async (req,res)=>{
 // Get All Posts
 app.get('/posts', async (req,res)=>{
     try {
-        const posts = await Post.find().sort({ createdAt: -1 });
+        const posts = mockDB.posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         res.json(posts);
     } catch(err) {
         res.json({ error: err.message });
@@ -118,8 +118,8 @@ app.get('/posts', async (req,res)=>{
 // Get Single Post
 app.get('/posts/:id', async (req,res)=>{
     try {
-        const post = await Post.findById(req.params.id);
-        res.json(post);
+        const post = mockDB.posts.find(p => p._id === req.params.id);
+        res.json(post || { error: "Post not found" });
     } catch(err) {
         res.json({ error: err.message });
     }
@@ -128,8 +128,13 @@ app.get('/posts/:id', async (req,res)=>{
 // Delete Post
 app.delete('/deletePost/:id', async (req,res)=>{
     try {
-        await Post.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message:"Post Deleted" });
+        const index = mockDB.posts.findIndex(p => p._id === req.params.id);
+        if(index !== -1) {
+            mockDB.posts.splice(index, 1);
+            res.json({ success: true, message:"Post Deleted" });
+        } else {
+            res.json({ success: false, message: "Post not found" });
+        }
     } catch(err) {
         res.json({ success: false, message: err.message });
     }
@@ -234,13 +239,15 @@ app.post('/comment', async (req,res)=>{
     try {
         const {postId, email, comment}=req.body;
 
-        const newComment = new Comment({
+        const newComment = {
+            _id: generateId(),
             postId,
             email,
-            comment
-        });
+            comment,
+            createdAt: new Date()
+        };
 
-        await newComment.save();
+        mockDB.comments.push(newComment);
         res.json({ success: true, message:"Comment Added" });
     } catch(err) {
         res.json({ success: false, message: err.message });
@@ -250,7 +257,9 @@ app.post('/comment', async (req,res)=>{
 // Get Comments for Post
 app.get('/comments/:postId', async (req,res)=>{
     try {
-        const comments = await Comment.find({ postId: req.params.postId }).sort({ createdAt: -1 });
+        const comments = mockDB.comments
+            .filter(c => c.postId === req.params.postId)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         res.json(comments);
     } catch(err) {
         res.json({ error: err.message });
@@ -260,11 +269,19 @@ app.get('/comments/:postId', async (req,res)=>{
 // ============ HEALTH CHECK ============
 
 app.get('/health', (req,res)=>{
-    res.json({ status: "Server running ✅", aiEnabled: true });
+    res.json({ 
+        status: "Server running ✅", 
+        aiEnabled: true,
+        mode: "DEMO (In-Memory Database)"
+    });
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT,()=>{
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🤖 AI Features enabled with HuggingFace`);
+    console.log(`📝 Demo Mode: Using In-Memory Database`);
+    console.log(`\n✅ Test Credentials:`);
+    console.log(`   Email: demo@example.com`);
+    console.log(`   Password: demo123`);
 });
